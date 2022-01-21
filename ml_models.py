@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.metrics import mean_squared_error, log_loss
+from sklearn.metrics import mean_squared_error, log_loss, accuracy_score
 #For the neural network
 import torch
 import torch.nn as nn
@@ -12,7 +12,6 @@ import torch.optim as optim
 from torch.utils.data import DataLoader,TensorDataset
 import os
 import random
-
 
 """STEP 1 = LOADING, EDDITING, VISUALISING DATASET"""
 
@@ -24,19 +23,21 @@ data = pd.read_csv(filename)
 #check for null values
 print(data.isnull().sum())
 print("Dataframe's shape: ",data.shape)
+
 # get number of unique values for each column
 print(data.nunique())
 
 #Visualising Dataset
+data.head()
+
+count=0
+for i in range(data.shape[0]):
+  if(data['Adj Close'][i]==data['Close'][i]):
+    count+=1
+print(count)
+
 #as time series
 data.plot.line(y="Close", x="Date")
-plt.show()
-
-#as multivariable function
-d=data.to_numpy()
-X = data[ ["Close"] ].to_numpy()#as_matrix()
-y = data[ ["Open", "High", "Low", "Volume"] ].to_numpy()
-plt.plot( X, y, 'rx', markersize=2 )
 plt.show()
 
 data.describe()
@@ -56,12 +57,6 @@ data['Volume'].plot.kde()
 """STEP 2 = CLOSING VALUES: PREPROCESSING-TRAINING-DIAGNOSTICS"""
 
 #normalisation
-count=0
-for i in range(data.shape[0]):
-  if(data['Adj Close'][i]==data['Close'][i]):
-    count+=1
-print(count)
-
 scaler = MinMaxScaler()
 #we dont need column "Date"
 #we will also drop column "Adj Close, as it is the same as column "Close"
@@ -111,7 +106,8 @@ print(c_v_score)
 
 pred=clf3.fit(x_train, y_train).predict(x_test)
 
-print("LOSS:",log_loss(y_test, pred))
+print("LOSS: ",log_loss(y_test, pred))
+print("Accuracy: ", accuracy_score(y_test, pred))
 
 """# Linear Regression Model"""
 
@@ -135,6 +131,7 @@ print(c_v_score)
 
 pred=clf2.fit(x_train, y_train).predict(x_test)
 print("TEST RMSE:",mean_squared_error(y_test, pred,squared=False))
+print("Accuracy: ", accuracy_score(y_test, pred))
 
 """
 # Neural Network Model"""
@@ -143,7 +140,6 @@ close_values=data_close['Actual_Close']
 train,test=train_test_split(close_values,test_size=0.2)
 train=np.array(train).reshape(train.shape[0],1)
 test=np.array(test).reshape(test.shape[0],1)
-train.shape,test.shape
 
 xTrain=[]
 yTrain=[]
@@ -151,7 +147,6 @@ for i in range(50,train.shape[0]):
   xTrain.append(train[i-50:i])
   yTrain.append(train[i])
 xTrain,yTrain=np.array(xTrain),np.array(yTrain)
-xTrain.shape,yTrain.shape
 
 xTest=[]
 yTest=[]
@@ -160,7 +155,6 @@ for i in range(50,test.shape[0]):
   xTest.append(test[i-50:i])
   yTest.append(test[i])
 xTest,yTest=np.array(xTest),np.array(yTest)
-xTest.shape,xTest.shape
 
 device='cpu'
 yTest=torch.from_numpy(yTest).to(device)
